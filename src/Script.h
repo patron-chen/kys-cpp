@@ -1,23 +1,27 @@
 #pragma once
-#include "lua/lua.hpp"
-#include <string>
 #include "Event.h"
+#ifdef _WIN32
+#include "lua.hpp"
+#else
+#include "lua5.3/lua.hpp"
+#endif
+#include <string>
 
 class Script
 {
-private:
-    static Script script_;
 public:
     Script();
     ~Script();
 
     lua_State* lua_state_ = nullptr;
 
-    static Script* getInstance() { return &script_; }
+    static Script* getInstance()
+    {
+        static Script s;
+        return &s;
+    }
 
     int runScript(std::string filename);
 
     int registerEventFunctions();
-
 };
-

@@ -8,19 +8,11 @@ public:
     Cloud() { x_ = -1000; y_ = -1000; }
     virtual ~Cloud() {}
 
-    enum CloudTowards
-    {
-        Left = 0,
-        Right = 1,
-        Up = 2,
-        Down = 3,
-    };
-
     Point position_;
-    int speed_;
+    int speed_x_, speed_y_;
 
-    const int max_X = 17280;
-    const int max_Y = 8640;
+    const int max_X_ = 17280;
+    const int max_Y_ = 8640;
     const int num_style_ = 10;
     int num_;
 

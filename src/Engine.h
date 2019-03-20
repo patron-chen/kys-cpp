@@ -1,22 +1,23 @@
 ﻿#pragma once
 
-extern "C"
-{
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
-}
 
 #include <algorithm>
 #include <functional>
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
+
+#if defined(_WIN32) && defined(_TINYPOT)
 #include "tinypot/PotDll.h"
+#endif
 
 //这里是底层部分，将SDL的函数均封装了一次
 //如需更换底层，则要重新实现下面的全部功能，并重新定义全部常数和类型
-#define BP_AUDIO_DEVICE_FORMAT AUDIO_S16
-#define BP_AUDIO_MIX_MAXVOLUME SDL_MIX_MAXVOLUME
+
+//每个SDL的函数和结构通常仅出现一次，其余的均用已封的功能完成
 
 typedef std::function<void(uint8_t*, int)> AudioCallback;
 typedef SDL_Renderer BP_Renderer;
@@ -25,8 +26,14 @@ typedef SDL_Texture BP_Texture;
 typedef SDL_Rect BP_Rect;
 typedef SDL_Color BP_Color;
 typedef SDL_Keycode BP_Keycode;
+typedef SDL_Surface BP_Surface;
 
-typedef enum { BP_ALIGN_LEFT, BP_ALIGN_MIDDLE, BP_ALIGN_RIGHT } BP_Align;
+enum BP_Align
+{
+    BP_ALIGN_LEFT,
+    BP_ALIGN_MIDDLE,
+    BP_ALIGN_RIGHT
+};
 
 #define BP_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED
 
@@ -45,17 +52,17 @@ class Engine
 private:
     Engine();
     virtual ~Engine();
-private:
-    static Engine engine_;
-    Engine* this_;
 public:
-    static Engine* getInstance() { return &engine_; };
+    static Engine* getInstance()
+    {
+        static Engine e;
+        return &e;
+    }
     //图形相关
 private:
     BP_Window* window_ = nullptr;
     BP_Renderer* renderer_ = nullptr;
-    BP_Texture* tex_ = nullptr, *tex2_ = nullptr, *logo_ = nullptr;
-    BP_AudioSpec want_, spec_;
+    BP_Texture *tex_ = nullptr, *tex2_ = nullptr, *logo_ = nullptr;
     BP_Rect rect_;
     BP_Texture* testTexture(BP_Texture* tex) { return tex ? tex : this->tex_; }
     bool full_screen_ = false;
@@ -64,29 +71,43 @@ private:
     int start_w_ = 1024, start_h_ = 640;
     int win_w_, win_h_, min_x_, min_y_, max_x_, max_y_;
     double rotation_ = 0;
-    int ratio_x_ = 1, ratio_y_ = 1;
+    double ratio_x_ = 1, ratio_y_ = 1;
+
+    int render_times_ = 0;
+
 public:
     int init(void* handle = 0);
 
     void getWindowSize(int& w, int& h) { SDL_GetWindowSize(window_, &w, &h); }
     void getWindowMaxSize(int& w, int& h) { SDL_GetWindowMaximumSize(window_, &w, &h); }
-    int getWindowsWidth();
-    int getWindowsHeight();
+    int getWindowWidth();
+    int getWindowHeight();
     int getMaxWindowWidth() { return max_x_ - min_x_; }
     int getMaxWindowHeight() { return max_y_ - min_y_; }
+    void getWindowPosition(int& x, int& y) { SDL_GetWindowPosition(window_, &x, &y); }
     void setWindowSize(int w, int h);
-    void setStartWindowSize(int w, int h) { start_w_ = w; start_h_ = h; }
+    void setStartWindowSize(int w, int h)
+    {
+        start_w_ = w;
+        start_h_ = h;
+    }
     void setWindowPosition(int x, int y);
     void setWindowTitle(const std::string& str) { SDL_SetWindowTitle(window_, str.c_str()); }
     BP_Renderer* getRenderer() { return renderer_; }
 
     void createAssistTexture(int w, int h);
-    void setPresentPosition();  //设置贴图的位置
-    void getPresentSize(int& w, int& h) { w = rect_.w; h = rect_.h; }
+    void setPresentPosition();    //设置贴图的位置
+    //void getPresentSize(int& w, int& h) { w = rect_.w; h = rect_.h; }
     int getPresentWidth() { return rect_.w; }
     int getPresentHeight() { return rect_.h; }
-    void getMainTextureSize(int& w, int& h) { SDL_QueryTexture(tex2_, nullptr, nullptr, &w, &h); }
-    void destroyAssistTexture() { if (tex2_) { destroyTexture(tex2_); } }
+    void getMainTextureSize(int& w, int& h) { queryTexture(tex2_, &w, &h); }
+    void destroyAssistTexture()
+    {
+        if (tex2_)
+        {
+            destroyTexture(tex2_);
+        }
+    }
     static void destroyTexture(BP_Texture* t) { SDL_DestroyTexture(t); }
     BP_Texture* createYUVTexture(int w, int h);
     void updateYUVTexture(BP_Texture* t, uint8_t* data0, int size0, uint8_t* data1, int size1, uint8_t* data2, int size2);
@@ -94,13 +115,14 @@ public:
     BP_Texture* createARGBRenderedTexture(int w, int h);
     void updateARGBTexture(BP_Texture* t, uint8_t* buffer, int pitch);
     void renderCopy(BP_Texture* t = nullptr);
-    void showLogo() { SDL_RenderCopy(renderer_, logo_, nullptr, nullptr); }
+    void renderCopy(BP_Texture* t, BP_Rect* rect1, double angle);
+    void showLogo() { renderCopy(logo_, nullptr, nullptr); }
     void renderPresent() { SDL_RenderPresent(renderer_); /*renderClear();*/ }
     void renderClear() { SDL_RenderClear(renderer_); }
     void setTextureAlphaMod(BP_Texture* t, uint8_t alpha) { SDL_SetTextureAlphaMod(t, alpha); }
     void queryTexture(BP_Texture* t, int* w, int* h) { SDL_QueryTexture(t, nullptr, nullptr, w, h); }
     void setRenderTarget(BP_Texture* t) { SDL_SetRenderTarget(renderer_, t); }
-    void resetRenderTarget() { SDL_SetRenderTarget(renderer_, nullptr); }
+    void resetRenderTarget() { setRenderTarget(nullptr); }
     void createWindow() {}
     void createRenderer() {}
     void renderCopy(BP_Texture* t, int x, int y, int w = 0, int h = 0, int inPresent = 0);
@@ -109,70 +131,86 @@ public:
     bool isFullScreen();
     void toggleFullscreen();
     BP_Texture* loadImage(const std::string& filename);
+    BP_Texture* loadImageFromMemory(const std::string& content);
     bool setKeepRatio(bool b);
     BP_Texture* transBitmapToTexture(const uint8_t* src, uint32_t color, int w, int h, int stride);
     double setRotation(double r) { return rotation_ = r; }
-    void resetWindowsPosition();
-    void setRatio(int x, int y) { ratio_x_ = x; ratio_y_ = y; }
-    void setColor(BP_Texture* tex, BP_Color c, uint8_t alpha);
+    void resetWindowPosition();
+    void setRatio(double x, double y)
+    {
+        ratio_x_ = x;
+        ratio_y_ = y;
+    }
+    void setColor(BP_Texture* tex, BP_Color c);
     void fillColor(BP_Color color, int x, int y, int w, int h);
-    void setRenderAssistTexture() { SDL_SetRenderTarget(renderer_, tex2_); }
+    void setRenderAssistTexture() { setRenderTarget(tex2_); }
     void renderAssistTextureToWindow();
+    void setTextureBlendMode(BP_Texture* t) { SDL_SetTextureBlendMode(t, SDL_BLENDMODE_BLEND); }
 
-    //声音相关
-private:
-    SDL_AudioDeviceID device_;
-    AudioCallback callback_ = nullptr;
-public:
-    void pauseAudio(int pause) { SDL_PauseAudioDevice(device_, pause); }
-    void closeAudio() { SDL_CloseAudioDevice(device_); };
-    int getMaxVolume() { return BP_AUDIO_MIX_MAXVOLUME; };
-    void mixAudio(Uint8* dst, const Uint8* src, Uint32 len, int volume);
-    int openAudio(int& freq, int& channels, int& size, int minsize, AudioCallback f);
-    static void mixAudioCallback(void* userdata, Uint8* stream, int len);
-    void setAudioCallback(AudioCallback cb = nullptr) { callback_ = cb; }
+    void resetRenderTimes(int t = 0) { render_times_ = t; }
+    int getRenderTimes() { return render_times_; }
+
+    BP_Texture* getRenderAssistTexture() { return tex2_; }
 
     //事件相关
 private:
-    SDL_Event e_;
     int time_;
+
 public:
-    void delay(const int t) { SDL_Delay(t); }
-    uint32_t getTicks() { return SDL_GetTicks(); }
+    static void delay(const int t) { SDL_Delay(t); }
+    static uint32_t getTicks() { return SDL_GetTicks(); }
     uint32_t tic() { return time_ = SDL_GetTicks(); }
-    void toc() { if (SDL_GetTicks() != time_) { printf("%d\n", SDL_GetTicks() - time_); } }
-    void getMouseState(int& x, int& y) { SDL_GetMouseState(&x, &y); };
-    int pollEvent(BP_Event& e) { return SDL_PollEvent(&e); }
-    int pushEvent(BP_Event& e) { return SDL_PushEvent(&e); }
-    void flushEvent() { SDL_FlushEvent(0); }
-    void free(void* mem) { SDL_free(mem); }
-    bool checkKeyPress(BP_Keycode key);
+    void toc()
+    {
+        if (SDL_GetTicks() != time_)
+        {
+            printf("%d\n", SDL_GetTicks() - time_);
+        }
+    }
+    static void getMouseState(int& x, int& y) { SDL_GetMouseState(&x, &y); };
+    static int pollEvent(BP_Event& e) { return SDL_PollEvent(&e); }
+    static int pollEvent() { return SDL_PollEvent(nullptr); }
+    static int pushEvent(BP_Event& e) { return SDL_PushEvent(&e); }
+    static void flushEvent() { SDL_FlushEvent(0); }
+    static void free(void* mem) { SDL_free(mem); }
+    static bool checkKeyPress(BP_Keycode key);
 
     //UI相关
 private:
     BP_Texture* square_;
+
 public:
     BP_Texture* createSquareTexture(int size);
     BP_Texture* createTextTexture(const std::string& fontname, const std::string& text, int size, BP_Color c);
-    void drawText(const std::string& fontname, std::string& text, int size, int x, int y, uint8_t alpha, int align, BP_Color c);
-    void drawSubtitle(const std::string& fontname, const std::string& text, int size, int x, int y, uint8_t alpha, int align);
-    //void split(std::string& s, std::string& delim, std::vector< std::string >* ret);
-    std::vector<std::string> splitString(const std::string& s, const std::string& delim);
     int showMessage(const std::string& content);
     void renderSquareTexture(BP_Rect* rect, BP_Color color, uint8_t alpha);
+
 public:
     //标题;
     std::string title_ = "All Heroes in Kam Yung Stories";
+
 private:
     void* tinypot_ = nullptr;
+
 public:
     int playVideo(std::string filename);
+    int saveScreen(const char* filename);
+    int saveTexture(BP_Texture* tex, const char* filename);
+
+    //输入相关
+    void startTextInput() { SDL_StartTextInput(); }
+    void stopTextInput() { SDL_StopTextInput(); }
+    void setTextInputRect(int x, int y, int w = 0, int h = 0)
+    {
+        BP_Rect r = { x, y, w, h };
+        SDL_SetTextInputRect(&r);
+    }
 };
 
 //这里直接照搬SDL
 //更换底层需自己定义一套
 //好像是瞎折腾
-typedef enum
+enum BP_EventType
 {
     BP_FIRSTEVENT = SDL_FIRSTEVENT,
     //按关闭按钮
@@ -198,11 +236,11 @@ typedef enum
     BP_RENDER_TARGETS_RESET = SDL_RENDER_TARGETS_RESET,
 
     BP_LASTEVENT = SDL_LASTEVENT
-} BP_EventType;
+};
 
-typedef enum
+enum BP_WindowEventID
 {
-    BP_WINDOWEVENT_NONE = SDL_WINDOWEVENT_NONE,           /**< Never used */
+    BP_WINDOWEVENT_NONE = SDL_WINDOWEVENT_NONE, /**< Never used */
     BP_WINDOWEVENT_SHOWN = SDL_WINDOWEVENT_SHOWN,
     BP_WINDOWEVENT_HIDDEN = SDL_WINDOWEVENT_HIDDEN,
     BP_WINDOWEVENT_EXPOSED = SDL_WINDOWEVENT_EXPOSED,
@@ -220,9 +258,9 @@ typedef enum
     BP_WINDOWEVENT_FOCUS_GAINED = SDL_WINDOWEVENT_FOCUS_GAINED,
     BP_WINDOWEVENT_FOCUS_LOST = SDL_WINDOWEVENT_FOCUS_LOST,
     BP_WINDOWEVENT_CLOSE = SDL_WINDOWEVENT_CLOSE
-} BP_WindowEventID;
+};
 
-typedef enum
+enum BP_KeyBoard
 {
     BPK_LEFT = SDLK_LEFT,
     BPK_RIGHT = SDLK_RIGHT,
@@ -232,15 +270,21 @@ typedef enum
     BPK_ESCAPE = SDLK_ESCAPE,
     BPK_RETURN = SDLK_RETURN,
     BPK_DELETE = SDLK_DELETE,
-    BPK_BACKSPACE = SDLK_BACKSPACE
-} BP_KeyBoard;
+    BPK_BACKSPACE = SDLK_BACKSPACE,
+    BPK_TAB = SDLK_TAB,
+    BPK_PAGEUP = SDLK_PAGEUP,
+    BPK_PAGEDOWN = SDLK_PAGEDOWN,
+    BPK_1 = SDLK_1,
+    BPK_2 = SDLK_2,
+    BPK_3 = SDLK_3,
+};
 
-typedef enum
+enum BP_Button
 {
     BP_BUTTON_LEFT = SDL_BUTTON_LEFT,
     BP_BUTTON_MIDDLE = SDL_BUTTON_MIDDLE,
     BP_BUTTON_RIGHT = SDL_BUTTON_RIGHT
-} BP_Button;
+};
 
 //mingw无std::mutex
 #ifdef __MINGW32__
@@ -248,6 +292,7 @@ class mutex
 {
 private:
     SDL_mutex* _mutex;
+
 public:
     mutex() { _mutex = SDL_CreateMutex(); }
     ~mutex() { SDL_DestroyMutex(_mutex); }

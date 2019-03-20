@@ -1,10 +1,10 @@
 #pragma once
 
-class  Application
+class Application
 {
 public:
     Application();
     virtual ~Application();
     int run();
+    void config();
 };
-

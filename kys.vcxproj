@@ -9,20 +9,11 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0B2302D7-3C55-442F-8F3E-764B54328B45}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>kyscpp</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
     <ProjectName>kys</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -33,19 +24,6 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
@@ -63,28 +41,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)x86\$(Configuration)\</OutDir>
-    <IntDir>x86\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)x86\$(Configuration)\</OutDir>
-    <IntDir>x86\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,26 +58,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>Classes;.;include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_TINYPOT;_SDL_MIXER_AUDIO1;WIN32;_DEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;mod;src;$(USR_LOCAL)\include;common;src;local/include</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>F:\MODS\kys-cpp\src;F:\MODS\kys-cpp\include;F:\MODS\kys-cpp\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sdl2.lib;sdl2main.lib;sdl2_image.lib;sdl2_mixer.lib;sdl2_ttf.lib;bass.lib;bassmidi.lib;libiconv.lib;tinypot.lib;lua.lib;opencc.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lib\x86;$(USR_LOCAL)\lib\x86;local/lib/x86</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,76 +78,58 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>Classes;.;include</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_TINYPOT;_NETWORK;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;mod;src;$(USR_LOCAL)\include;common;src;local/include</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sdl2.lib;sdl2main.lib;sdl2_image.lib;sdl2_ttf.lib;sdl2_mixer.lib;bass.lib;bassmidi.lib;libiconv.lib;tinypot.lib;lua.lib;opencc.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lib\x86;$(USR_LOCAL)\lib\x86;local/lib/x86</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="readme.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="lib\bass.lib" />
-    <Library Include="lib\bassmidi.lib" />
-    <Library Include="lib\libiconv.lib" />
-    <Library Include="lib\libminizip.lib" />
-    <Library Include="lib\lua.lib" />
-    <Library Include="lib\SDL2.lib" />
-    <Library Include="lib\SDL2main.lib" />
-    <Library Include="lib\SDL2_image.lib" />
-    <Library Include="lib\SDL2_ttf.lib" />
-    <Library Include="lib\TinyPot.lib" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="others\Hanz2Piny.cpp" />
+    <ClCompile Include="others\zip.c" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Audio.cpp" />
     <ClCompile Include="src\BattleMap.cpp" />
     <ClCompile Include="src\BattleCursor.cpp" />
+    <ClCompile Include="src\BattleNetwork.cpp" />
     <ClCompile Include="src\BattleScene.cpp" />
     <ClCompile Include="src\BattleMenu.cpp" />
     <ClCompile Include="src\Button.cpp" />
+    <ClCompile Include="src\Console.cpp" />
+    <ClCompile Include="src\DrawableOnCall.cpp" />
+    <ClCompile Include="src\InputBox.cpp" />
+    <ClCompile Include="src\NewSave.cpp" />
+    <ClCompile Include="src\OpenCCConverter.cpp" />
+    <ClCompile Include="src\ParticleExample.cpp" />
+    <ClCompile Include="src\ParticleSystem.cpp" />
     <ClCompile Include="src\Cloud.cpp" />
     <ClCompile Include="src\Element.cpp" />
     <ClCompile Include="src\GameUtil.cpp" />
-    <ClCompile Include="src\Option.cpp" />
-    <ClCompile Include="src\others\ini.cpp" />
-    <ClCompile Include="src\others\INIReader.cpp" />
+    <ClCompile Include="src\GrpIdxFile.cpp" />
     <ClCompile Include="src\RandomRole.cpp" />
     <ClCompile Include="src\Script.cpp" />
     <ClCompile Include="src\ShowExp.cpp" />
     <ClCompile Include="src\ShowRoleDifference.cpp" />
+    <ClCompile Include="src\SuperMenuText.cpp" />
     <ClCompile Include="src\Talk.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\Event.cpp" />
-    <ClCompile Include="src\File.cpp" />
+    <ClCompile Include="common\File.cpp" />
     <ClCompile Include="src\Font.cpp" />
     <ClCompile Include="src\Head.cpp" />
     <ClCompile Include="src\TeamMenu.cpp" />
     <ClCompile Include="src\TextBox.cpp" />
+    <ClCompile Include="src\TextBoxRoll.cpp" />
     <ClCompile Include="src\UI.cpp" />
-    <ClCompile Include="src\others\libconvert.cpp" />
+    <ClCompile Include="common\convert.cpp" />
     <ClCompile Include="src\PotConv.cpp" />
     <ClCompile Include="src\SubScene.cpp" />
     <ClCompile Include="src\TitleScene.cpp" />
@@ -209,39 +147,51 @@
     <ClCompile Include="src\UIStatus.cpp" />
     <ClCompile Include="src\UISystem.cpp" />
     <ClCompile Include="src\Util.cpp" />
-    <ClCompile Include="src\Zip.cpp" />
+    <ClCompile Include="src\ZipFile.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="others\Hanz2Piny.h" />
+    <ClInclude Include="others\miniz.h" />
+    <ClInclude Include="others\zip.h" />
+    <ClInclude Include="resource\resource.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Audio.h" />
     <ClInclude Include="src\BattleMap.h" />
     <ClInclude Include="src\BattleCursor.h" />
+    <ClInclude Include="src\BattleNetwork.h" />
     <ClInclude Include="src\BattleScene.h" />
     <ClInclude Include="src\BattleMenu.h" />
     <ClInclude Include="src\Button.h" />
+    <ClInclude Include="src\Console.h" />
+    <ClInclude Include="src\DrawableOnCall.h" />
+    <ClInclude Include="src\InputBox.h" />
+    <ClInclude Include="src\NewSave.h" />
+    <ClInclude Include="src\OpenCCConverter.h" />
+    <ClInclude Include="src\ParticleExample.h" />
+    <ClInclude Include="src\ParticleSystem.h" />
     <ClInclude Include="src\Cloud.h" />
     <ClInclude Include="src\Element.h" />
     <ClInclude Include="src\GameUtil.h" />
-    <ClInclude Include="src\Option.h" />
-    <ClInclude Include="src\others\ini.h" />
-    <ClInclude Include="src\others\INIReader.h" />
-    <ClInclude Include="src\Random.h" />
+    <ClInclude Include="common\INIReader.h" />
+    <ClInclude Include="src\GrpIdxFile.h" />
+    <ClInclude Include="common\Random.h" />
     <ClInclude Include="src\RandomRole.h" />
     <ClInclude Include="src\Script.h" />
     <ClInclude Include="src\ShowExp.h" />
     <ClInclude Include="src\ShowRoleDifference.h" />
+    <ClInclude Include="src\SuperMenuText.h" />
     <ClInclude Include="src\Talk.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\Event.h" />
     <ClInclude Include="src\EventMacro.h" />
-    <ClInclude Include="src\File.h" />
+    <ClInclude Include="common\File.h" />
     <ClInclude Include="src\Font.h" />
     <ClInclude Include="src\Head.h" />
     <ClInclude Include="src\TeamMenu.h" />
     <ClInclude Include="src\TextBox.h" />
+    <ClInclude Include="src\TextBoxRoll.h" />
     <ClInclude Include="src\UI.h" />
-    <ClInclude Include="src\others\libconvert.h" />
+    <ClInclude Include="common\convert.h" />
     <ClInclude Include="src\PotConv.h" />
     <ClInclude Include="src\TitleScene.h" />
     <ClInclude Include="src\MainScene.h" />
@@ -258,10 +208,16 @@
     <ClInclude Include="src\UIStatus.h" />
     <ClInclude Include="src\UISystem.h" />
     <ClInclude Include="src\Util.h" />
-    <ClInclude Include="src\Zip.h" />
+    <ClInclude Include="src\ZipFile.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="kys.rc" />
+    <Image Include="resource\kys.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource\kys.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

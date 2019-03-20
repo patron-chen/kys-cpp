@@ -1,25 +1,30 @@
 
-//涓�浜涜緟鍔╃殑鍔熻兘锛屼緥濡傚皢浜岃繘鍒舵枃浠惰浆涓烘枃鏈枃浠剁瓑
+//一些辅助的功能
+//一些常数的设置比较不合理，建议以调试模式手动执行
 
-
-#include "../src/File.h"
-#include "../src/others/libconvert.h"
+#include "File.h"
+#include "GrpIdxFile.h"
 #include "TypesABC.h"
+#include "convert.h"
 
-void trans_bin_list()
+//转换二进制文件为文本
+void trans_bin_list(std::string in, std::string out)
 {
     std::vector<int16_t> leave_list;
-    File::readFileToVector("../game/binlist/levelup.bin", leave_list);
+    File::readFileToVector(in, leave_list);
 
+    std::string s;
     for (auto a : leave_list)
     {
-        printf("%d, ", a);
+        convert::formatAppendString(s, "%d, ", a);
     }
+    convert::writeStringToFile(s, out);
 }
 
+//导出战斗帧数为文本
 void trans_fight_frame()
 {
-    for (int i = 0; i <= 109; i++)
+    for (int i = 0; i <= 300; i++)
     {
         std::string path = convert::formatString("../game/resource/fight/fight%03d", i);
         std::vector<int16_t> frame;
@@ -42,6 +47,7 @@ void trans_fight_frame()
     }
 }
 
+//扩展存档，将短整数扩展为int32
 int expandR(std::string idx, std::string grp, bool ranger = true)
 {
     if (!File::fileExist(grp) || !File::fileExist(idx))
@@ -50,11 +56,17 @@ int expandR(std::string idx, std::string grp, bool ranger = true)
     }
 
     std::vector<int> offset1, length1, offset2, length2;
-    auto rgrp1 = File::getIdxContent(idx, grp, &offset1, &length1);
+    auto rgrp1 = GrpIdxFile::getIdxContent(idx, grp, &offset1, &length1);
     offset2 = offset1;
     length2 = length1;
-    for (auto& i : offset2) { i *= 2; }
-    for (auto& i : length2) { i *= 2; }
+    for (auto& i : offset2)
+    {
+        i *= 2;
+    }
+    for (auto& i : length2)
+    {
+        i *= 2;
+    }
 
     int len = offset1.back();
     auto rgrp2 = new char[len * 2];
@@ -114,7 +126,7 @@ int expandR(std::string idx, std::string grp, bool ranger = true)
         File::writeVectorToData(rgrp2 + offset2[3], length2[3], submap_infos, sizeof(SubMapInfoSave));
         File::writeVectorToData(rgrp2 + offset2[4], length2[4], magics, sizeof(MagicSave));
     }
-    s32[1]--; //submap scene id
+    s32[1]--;    //submap scene id
     File::writeFile(grp + "32", rgrp2, len * 2);
     File::writeFile(idx + "32", &offset2[1], 4 * offset2.size() - 4);
     delete rgrp1;
@@ -125,8 +137,10 @@ int expandR(std::string idx, std::string grp, bool ranger = true)
 
 int main()
 {
-    //trans_bin_list();
-    //trans_fight_frame();
+    trans_bin_list("../game/binlist/levelup.bin", "../game/list/levelup.txt");
+    trans_bin_list("../game/binlist/leave.bin", "../game/list/leave.txt");
+    trans_fight_frame();
+
     expandR("../game/save/ranger.idx", "../game/save/ranger.grp");
 
     for (int i = 1; i <= 20; i++)
@@ -143,4 +157,3 @@ int main()
 
     return 0;
 }
-

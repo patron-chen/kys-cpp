@@ -4,7 +4,7 @@
 
 Menu::Menu()
 {
-    pass_child_ = 0;
+    active_child_ = 0;
 }
 
 Menu::~Menu()
@@ -16,32 +16,46 @@ void Menu::dealEvent(BP_Event& e)
     //此处处理键盘响应
     if (e.type == BP_KEYDOWN)
     {
-        int direct = 0;
-        if (e.key.keysym.sym == BPK_LEFT || e.key.keysym.sym == BPK_UP)
+        Direct direct = None;
+
+        switch (e.key.keysym.sym)
         {
-            direct = -1;
-        }
-        if (e.key.keysym.sym == BPK_RIGHT || e.key.keysym.sym == BPK_DOWN)
-        {
-            direct = 1;
+        case BPK_LEFT:
+            direct = Left;
+            break;
+        case BPK_UP:
+            direct = Up;
+            break;
+        case BPK_RIGHT:
+            direct = Right;
+            break;
+        case BPK_DOWN:
+            direct = Down;
+            break;
+        default:
+            break;
         }
 
-        if (direct != 0)
+        if (direct != None)
         {
+            //如果全都没被选中，一般是鼠标漂到外边，则先选中上次的
+            bool all_normal = checkAllNormal();
             setAllChildState(Normal);
-            //仅有两项的菜单两头封住
-            if (getChildCount() <= 2)
+            if (all_normal)
             {
-                pass_child_ = direct > 0 ? getChildCount() - 1 : 0;
+                //当前的如果不显示，则找第一个
+                if (active_child_ < childs_.size() && !childs_[active_child_]->getVisible())
+                {
+                    active_child_ = findFristVisibleChild();
+                }
             }
             else
             {
-                pass_child_ = findNextVisibleChild(pass_child_, direct);
+                active_child_ = findNextVisibleChild(active_child_, direct);
             }
+            forceActiveChild();
         }
     }
-    //事务处理中可以强制改变子项的Pass，用于菜单中固定某项
-    forcePassChild();
 }
 
 void Menu::arrange(int x, int y, int inc_x, int inc_y)
@@ -59,17 +73,49 @@ void Menu::arrange(int x, int y, int inc_x, int inc_y)
 
 void Menu::onPressedOK()
 {
-    pressToResult();
+    if (checkAllNormal())
+    {
+        result_ = -1;
+        return;
+    }
+    checkActiveToResult();
     if (result_ >= 0)
     {
         setExit(true);
     }
 }
 
+void Menu::onPressedCancel()
+{
+    exitWithResult(-1);
+}
+
 void Menu::onEntrance()
 {
-    pass_child_ = findFristVisibleChild();
-    forcePassChild();
+    if (!checkAllNormal())
+    {
+        active_child_ = start_;
+    }
+    forceActiveChild();
+}
+
+void Menu::onExit()
+{
+    start_ = active_child_;
+}
+
+bool Menu::checkAllNormal()
+{
+    bool all_normal = true;
+    for (auto c : childs_)
+    {
+        if (c->getVisible() && c->getState() != Normal)
+        {
+            all_normal = false;
+            break;
+        }
+    }
+    return all_normal;
 }
 
 //void Menu::onPressedOK()
@@ -95,10 +141,11 @@ void MenuText::setStrings(std::vector<std::string> strings)
     int i = 0;
     for (auto& str : strings)
     {
-        if (str.length() > len) { len = str.length(); }
-        auto b = new Button();
-        b->setText(str);
-        addChild(b, 0, i * 25);
+        if (str.length() > len)
+        {
+            len = str.length();
+        }
+        addChild<Button>(0, i * 25)->setText(str);
         i++;
     }
     w_ = 10 * len;
@@ -131,4 +178,3 @@ int MenuText::getResultFromString(std::string str)
     }
     return -1;
 }
-

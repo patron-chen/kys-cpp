@@ -10,8 +10,13 @@ public:
     virtual void dealEvent(BP_Event& e) override;
     void arrange(int x, int y, int inc_x, int inc_y);
     virtual void onPressedOK() override;
+    virtual void onPressedCancel() override;
     virtual void onEntrance() override;
-    DEFAULT_CANCEL_EXIT;
+    virtual void onExit() override;
+    void setStartItem(int s) { start_ = s; }
+    bool checkAllNormal();
+protected:
+    int start_ = 0;
 };
 
 class MenuText : public Menu

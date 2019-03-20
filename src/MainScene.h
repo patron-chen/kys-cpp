@@ -2,23 +2,41 @@
 #include "Scene.h"
 #include "Cloud.h"
 #include "Types.h"
+#include "ParticleExample.h"
+
+class ParticleWeather : public Element, public ParticleExample
+{
+public:
+    //注意这个继承方法比较扯淡，其他时候尽量不要这样用
+    virtual void draw() override
+    {
+        int c = ParticleSystem::draw();
+        Engine::getInstance()->resetRenderTimes(Engine::getInstance()->getRenderTimes() + c);
+    }
+    virtual void setPosition(int x, int y)
+    {
+        Element::setPosition(x, y);
+        ParticleSystem::setPosition(x, y);
+    }
+};
 
 class MainScene : public Scene
 {
 private:
-    static MainScene main_scene_;
     MainScene();
     ~MainScene();
 
 public:
-    static MainScene* getIntance() { return &main_scene_; }
+    static MainScene* getInstance()
+    {
+        static MainScene ms;
+        return &ms;
+    }
 
-    MapSquareInt* earth_layer_, *surface_layer_, *building_layer_, *build_x_layer_, *build_y_layer_, *entrance_layer_ = nullptr;
+    MapSquareInt earth_layer_, surface_layer_, building_layer_, build_x_layer_, build_y_layer_, entrance_layer_;
     bool data_readed_ = false;
 
-    void divide2(MapSquareInt* m);
-
-    int rest_time_ = 0;                     //停止操作的时间
+    void divide2(MapSquareInt& m);
 
     int MAN_PIC_0 = 2501;                   //初始主角图偏移量
     int MAN_PIC_COUNT = 7;                  //单向主角图张数
@@ -32,11 +50,11 @@ public:
     int force_submap_ = -1;
     int force_submap_x_ = -1;
     int force_submap_y_ = -1;
+    int force_event_ = -1;
 
     //todo: 休息未完成
 
-    Cloud::CloudTowards cloud_towards = Cloud::Left;
-    std::vector<Cloud*> cloud_vector_;
+    std::vector<Cloud> cloud_vector_;
 
     virtual void draw() override;
     virtual void backRun() override;
@@ -49,12 +67,20 @@ public:
     void setEntrance();
 
     virtual bool isBuilding(int x, int y);
-    bool isWater(int x, int y);
+    int isWater(int x, int y);
 
     virtual bool isOutScreen(int x, int y) override;
     virtual bool canWalk(int x, int y) override;
 
     bool checkEntrance(int x, int y, bool only_check = false);    //主地图主要是检测入口
 
-    void forceEnterSubScene(int submap_id, int x, int y);    //在下一个事件循环会强制进入某场景，用于开始和读取存档
+    void forceEnterSubScene(int submap_id, int x, int y, int event = -1);    //在下一个事件循环会强制进入某场景，用于开始和读取存档
+
+    bool inNorth() { return man_x_ + man_y_ <= 220; }
+    int view_cloud_ = 0;
+    int getViewCloud() { return view_cloud_; }
+
+    void setWeather();
+    ParticleWeather* getWeather() { return &weather_; }
+    ParticleWeather weather_;
 };

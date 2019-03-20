@@ -1,22 +1,34 @@
 #include "UISave.h"
-#include "Save.h"
+#include "Event.h"
 #include "File.h"
-#include "others/libconvert.h"
 #include "MainScene.h"
+#include "Save.h"
 #include "SubScene.h"
+#include "UI.h"
+#include "convert.h"
 
 UISave::UISave()
 {
     std::vector<std::string> strings;
+    auto get_save_time = [](int i) -> std::string
+    {
+        auto str = File::getFileTime(Save::getFilename(i, 'r'));
+        if (str.empty())
+        {
+            str = "--------------------";
+        }
+        return str;
+    };
     for (int i = 0; i <= 10; i++)
     {
-        auto str = convert::formatString("進度%02d  %s", i, File::getFileTime(Save::getFilename(i, 'r')).c_str());
+        auto str = convert::formatString("進度%02d  %s", i, get_save_time(i).c_str());
         strings.push_back(str);
     }
-    auto str = convert::formatString("自動檔  %s", File::getFileTime(Save::getFilename(AUTO_SAVE_ID, 'r')).c_str());
+    auto str = convert::formatString("自動檔  %s", get_save_time(AUTO_SAVE_ID).c_str());
     strings.push_back(str);
     setStrings(strings);
-    childs_[0]->setVisible(false); //屏蔽进度0
+    childs_[0]->setVisible(false);    //屏蔽进度0
+    forceActiveChild(1);
     arrange(0, 0, 0, 28);
 }
 
@@ -35,7 +47,7 @@ void UISave::onEntrance()
 
 void UISave::onPressedOK()
 {
-    pressToResult();
+    checkActiveToResult();
     if (result_ >= 0)
     {
         if (mode_ == 0 && Save::checkSaveFileExist(result_))
@@ -45,6 +57,7 @@ void UISave::onPressedOK()
         }
         if (mode_ == 1)
         {
+            Event::getInstance()->arrangeBag();    //存档时会整理物品背包
             save(result_);
             setExit(true);
         }
@@ -53,9 +66,9 @@ void UISave::onPressedOK()
 
 void UISave::load(int r)
 {
-    auto sub_scene = getPointerFromRoot<SubScene>();  //可以知道在不在子场景中
+    auto sub_scene = getPointerFromRoot<SubScene>();    //可以知道在不在子场景中
     auto save = Save::getInstance();
-    auto main_scene = MainScene::getIntance();
+    auto main_scene = MainScene::getInstance();
     save->load(r);
     main_scene->setManPosition(save->MainMapX, save->MainMapY);
     if (save->InSubMap >= 0)
@@ -76,13 +89,14 @@ void UISave::load(int r)
             sub_scene->forceExit();
         }
     }
+    UI::getInstance()->setExit(true);
 }
 
 void UISave::save(int r)
 {
-    auto sub_scene = getPointerFromRoot<SubScene>();  //可以知道在不在子场景中
+    auto sub_scene = getPointerFromRoot<SubScene>();    //可以知道在不在子场景中
     auto save = Save::getInstance();
-    auto main_scene = MainScene::getIntance();
+    auto main_scene = MainScene::getInstance();
     main_scene->getManPosition(save->MainMapX, save->MainMapY);
     if (sub_scene)
     {

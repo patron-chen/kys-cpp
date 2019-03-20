@@ -1,12 +1,12 @@
 #include "UIItem.h"
-#include "Save.h"
-#include "others\libconvert.h"
-#include "Font.h"
-#include "MainScene.h"
-#include "GameUtil.h"
-#include "TeamMenu.h"
-#include "ShowRoleDifference.h"
 #include "Event.h"
+#include "Font.h"
+#include "GameUtil.h"
+#include "MainScene.h"
+#include "Save.h"
+#include "ShowRoleDifference.h"
+#include "TeamMenu.h"
+#include "convert.h"
 
 UIItem::UIItem()
 {
@@ -14,22 +14,22 @@ UIItem::UIItem()
 
     for (int i = 0; i < item_buttons_.size(); i++)
     {
-        auto b = new Button();
+        auto b = addChild<Button>();
         item_buttons_[i] = b;
         b->setPosition(i % item_each_line_ * 85 + 40, i / item_each_line_ * 85 + 100);
         //b->setTexture("item", Save::getInstance()->getItemByBagIndex(i)->ID);
-        addChild(b);
     }
-    title_ = new MenuText();
-    title_->setStrings({ "劇情", "兵甲", "丹藥", "暗器", "拳經", "劍譜", "刀錄", "奇門", "心法" });
-    title_->setFontSize(24);
-    title_->arrange(0, 50, 64, 0);
-    addChild(title_);
+    title_.setStrings({ "劇情", "兵甲", "丹藥", "暗器", "拳經", "劍譜", "刀錄", "奇門", "心法" });
+    title_.setFontSize(24);
+    title_.arrange(0, 50, 64, 0);
+    addChild(&title_);
 
-    cursor_ = new TextBox();
-    cursor_->setTexture("title", 127);
-    cursor_->setVisible(false);
-    addChild(cursor_);
+    cursor_.setTexture("title", 127);
+    cursor_.setVisible(false);
+    addChild(&cursor_);
+
+    active_child_ = 0;
+    getChild(0)->setState(Pass);
 }
 
 UIItem::~UIItem()
@@ -41,12 +41,12 @@ void UIItem::setForceItemType(int f)
     force_item_type_ = f;
     if (f >= 0)
     {
-        title_->setAllChildVisible(false);
-        title_->getChild(f)->setVisible(true);
+        title_.setAllChildVisible(false);
+        title_.getChild(f)->setVisible(true);
     }
     else
     {
-        title_->setAllChildVisible(true);
+        title_.setAllChildVisible(true);
     }
 }
 
@@ -54,7 +54,10 @@ void UIItem::setForceItemType(int f)
 //详细分类："0劇情", "1兵甲", "2丹藥", "3暗器", "4拳經", "5劍譜", "6刀錄", "7奇門", "8心法"
 int UIItem::getItemDetailType(Item* item)
 {
-    if (item == nullptr) { return -1; }
+    if (item == nullptr)
+    {
+        return -1;
+    }
     if (item->ItemType == 0)
     {
         return 0;
@@ -101,6 +104,75 @@ void UIItem::geItemsByType(int item_type)
     }
 }
 
+void UIItem::checkCurrentItem()
+{
+    //强制停留在某类物品
+    if (force_item_type_ >= 0)
+    {
+        //title_.setResult(force_item_type_);
+        title_.forceActiveChild(force_item_type_);
+    }
+    int active = title_.getActiveChildIndex();
+    title_.getChild(active)->setState(Pass);
+    geItemsByType(active);
+    int type_item_count = available_items_.size();
+    //从这里计算出左上角可以取的最大值
+    //计算方法：先计算出总行数，减去可见行数，乘以每行成员数
+    max_leftup_ = ((type_item_count + item_each_line_ - 1) / item_each_line_ - line_count_) * item_each_line_;
+    if (max_leftup_ < 0)
+    {
+        max_leftup_ = 0;
+    }
+
+    leftup_index_ = GameUtil::limit(leftup_index_, 0, max_leftup_);
+
+    //计算被激活的按钮
+    Button* current_button = nullptr;
+    for (int i = 0; i < item_buttons_.size(); i++)
+    {
+        auto button = item_buttons_[i];
+        int index = i + leftup_index_;
+        auto item = getAvailableItem(index);
+        if (item)
+        {
+            button->setTexture("item", item->ID);
+        }
+        else
+        {
+            button->setTexture("item", -1);
+        }
+        if (button->getState() == Pass || button->getState() == Press)
+        {
+            current_button = button;
+            //result_ = current_item_->ID;
+        }
+    }
+
+    //计算被激活的按钮对应的物品
+    current_item_ = nullptr;
+    if (current_button)
+    {
+        int x, y;
+        current_button->getPosition(x, y);
+        current_item_ = Save::getInstance()->getItem(current_button->getTexutreID());
+        //让光标显示出来
+        if (current_button->getState() == Pass)
+        {
+            x += 2;
+        }
+        if (current_button->getState() == Press)
+        {
+            y += 2;
+        }
+        cursor_.setPosition(x, y);
+        cursor_.setVisible(true);
+    }
+    else
+    {
+        cursor_.setVisible(false);
+    }
+}
+
 Item* UIItem::getAvailableItem(int i)
 {
     if (i >= 0 && i < available_items_.size())
@@ -110,23 +182,9 @@ Item* UIItem::getAvailableItem(int i)
     return nullptr;
 }
 
-void UIItem::draw()
-{
-    showItemProperty(current_item_);
-}
-
 void UIItem::dealEvent(BP_Event& e)
 {
-    //强制停留在某类物品
-    if (force_item_type_ >= 0) { title_->setResult(force_item_type_); }
-    geItemsByType(title_->getPassChild());
-    int type_item_count = available_items_.size();
-
-    //从这里计算出左上角可以取的最大值
-    //计算方法：先计算出总行数，减去可见行数，乘以每行成员数
-    int max_leftup = ((type_item_count + item_each_line_ - 1) / item_each_line_ - line_count_) * item_each_line_;
-    if (max_leftup < 0) { max_leftup = 0; }
-
+    checkCurrentItem();
     if (e.type == BP_MOUSEWHEEL)
     {
         if (e.wheel.y > 0)
@@ -138,43 +196,79 @@ void UIItem::dealEvent(BP_Event& e)
             leftup_index_ += item_each_line_;
         }
     }
-    leftup_index_ = GameUtil::limit(leftup_index_, 0, max_leftup);
 
-    //计算当前指向的物品
-    //result_ = -1;
-    //current_item_ = nullptr;
-    //current_button_ = nullptr;
-    for (int i = 0; i < item_buttons_.size(); i++)
+    //此处处理键盘响应  未完成
+    if (focus_ == 1)
     {
-        auto button = item_buttons_[i];
-        int index = i + leftup_index_;
-        auto item = getAvailableItem(index);
-        if (item)
+        if (e.type == BP_KEYDOWN)
         {
-            button->setTexture("item", item->ID);
-            if (button->getState() == Pass || button->getState() == Press)
+            switch (e.key.keysym.sym)
             {
-                current_item_ = item;
-                current_button_ = button;
-                //result_ = current_item_->ID;
+            case BPK_LEFT:
+                if (active_child_ > 0)
+                {
+                    active_child_--;
+                }
+                else
+                {
+                    if (leftup_index_ > 0)
+                    {
+                        leftup_index_ -= item_each_line_;
+                        active_child_ = item_each_line_ - 1;
+                    }
+                }
+                break;
+            case BPK_RIGHT:
+                if (active_child_ < item_each_line_ * line_count_ - 1)
+                {
+                    active_child_++;
+                }
+                else
+                {
+                    leftup_index_ += item_each_line_;
+                    if (leftup_index_ <= max_leftup_)
+                    { active_child_ = item_each_line_ * (line_count_ - 1); }
+                }
+                break;
+            case BPK_UP:
+                if (active_child_ < item_each_line_ && leftup_index_ == 0)
+                {
+                    focus_ = 0;
+                }
+                else if (active_child_ < item_each_line_)
+                {
+                    leftup_index_ -= item_each_line_;
+                }
+                else
+                {
+                    active_child_ -= item_each_line_;
+                }
+                break;
+            case BPK_DOWN:
+                if (active_child_ < item_each_line_ * (line_count_ - 1))
+                {
+                    active_child_ += item_each_line_;
+                }
+                else
+                {
+                    leftup_index_ += item_each_line_;
+                }
+                break;
+            default:
+                break;
             }
+            forceActiveChild();
         }
-        else
+        title_.setDealEvent(0);
+        title_.setAllChildState(Normal);
+    }
+    if (focus_ == 0)
+    {
+        title_.setDealEvent(1);
+        if (e.type == BP_KEYUP && e.key.keysym.sym == BPK_DOWN)
         {
-            button->setTexture("item", -1);
+            focus_ = 1;
         }
-    }
-    //让光标显示出来
-    if (current_button_)
-    {
-        int x, y;
-        current_button_->getPosition(x, y);
-        cursor_->setPosition(x, y);
-        cursor_->setVisible(true);
-    }
-    else
-    {
-        cursor_->setVisible(false);
     }
 }
 
@@ -199,7 +293,7 @@ void UIItem::showItemProperty(Item* item)
     if (item->isCompass())
     {
         int man_x, man_y;
-        MainScene::getIntance()->getManPosition(man_x, man_y);
+        MainScene::getInstance()->getManPosition(man_x, man_y);
         auto str = convert::formatString("當前坐標 %d, %d", man_x, man_y);
         showOneProperty(1, str, size, c, x, y);
     }
@@ -224,7 +318,7 @@ void UIItem::showItemProperty(Item* item)
     showOneProperty(item->AddSpeed, "輕功%+d", size, c, x, y);
     showOneProperty(item->AddDefence, "防禦%+d", size, c, x, y);
 
-    showOneProperty(item->AddMedcine, "醫療%+d", size, c, x, y);
+    showOneProperty(item->AddMedicine, "醫療%+d", size, c, x, y);
     showOneProperty(item->AddUsePoison, "用毒%+d", size, c, x, y);
     showOneProperty(item->AddDetoxification, "解毒%+d", size, c, x, y);
     showOneProperty(item->AddAntiPoison, "抗毒%+d", size, c, x, y);
@@ -258,7 +352,7 @@ void UIItem::showItemProperty(Item* item)
     }
 
     x = 10;
-    y += size + 10;  //换行
+    y += size + 10;    //换行
     c = { 224, 170, 255, 255 };
     //Font::getInstance()->draw("需求：", size, x_ + x, y_ + y, c);
     //y += size + 10;
@@ -274,7 +368,7 @@ void UIItem::showItemProperty(Item* item)
     showOneProperty(item->NeedAttack, "攻擊%d", size, c, x, y);
     showOneProperty(item->NeedSpeed, "輕功%d", size, c, x, y);
 
-    showOneProperty(item->NeedMedcine, "醫療%d", size, c, x, y);
+    showOneProperty(item->NeedMedicine, "醫療%d", size, c, x, y);
     showOneProperty(item->NeedUsePoison, "用毒%d", size, c, x, y);
     showOneProperty(item->NeedDetoxification, "解毒%d", size, c, x, y);
 
@@ -287,6 +381,26 @@ void UIItem::showItemProperty(Item* item)
     showOneProperty(item->NeedIQ, "資質%d", size, c, x, y);
 
     showOneProperty(item->NeedExp, "基礎經驗%d", size, c, x, y);
+
+    if (item->NeedMaterial >= 0)
+    {
+        std::string str = "耗費";
+        str += Save::getInstance()->getItem(item->NeedMaterial)->Name;
+        showOneProperty(1, str, size, c, x, y);
+    }
+
+    x = 10;
+    y += size + 10;
+    for (int i = 0; i < 5; i++)
+    {
+        int make = item->MakeItem[i];
+        if (make >= 0)
+        {
+            std::string str = Save::getInstance()->getItem(make)->Name;
+            //str += " %d";
+            showOneProperty(item->MakeItemCount[i], str, size, c, x, y);
+        }
+    }
 }
 
 void UIItem::showOneProperty(int v, std::string format_str, int size, BP_Color c, int& x, int& y)
@@ -320,7 +434,10 @@ void UIItem::onPressedOK()
         }
     }
 
-    if (current_item_ == nullptr) { return; }
+    if (current_item_ == nullptr)
+    {
+        return;
+    }
 
     //在使用剧情物品的时候，返回一个结果，主UI判断此时可以退出
     if (current_item_->ItemType == 0)
@@ -332,33 +449,33 @@ void UIItem::onPressedOK()
     {
         if (current_item_->ItemType == 3)
         {
-            auto team_menu = new TeamMenu();
-            team_menu->setItem(current_item_);
-            team_menu->setText(convert::formatString("誰要使用%s", current_item_->Name));
-            team_menu->run();
-            auto role = team_menu->getRole();
-            delete team_menu;
+            TeamMenu team_menu;
+            team_menu.setItem(current_item_);
+            team_menu.setText(convert::formatString("誰要使用%s", current_item_->Name));
+            team_menu.run();
+            auto role = team_menu.getRole();
             if (role)
             {
                 Role r = *role;
                 GameUtil::useItem(role, current_item_);
-                auto df = new ShowRoleDifference(&r, role);
-                df->setText(convert::formatString("%s服用%s", role->Name, current_item_->Name));
-                df->run();
-                delete df;
+                ShowRoleDifference df(&r, role);
+                df.setText(convert::formatString("%s服用%s", role->Name, current_item_->Name));
+                df.run();
                 Event::getInstance()->addItemWithoutHint(current_item_->ID, -1);
             }
         }
         else if (current_item_->ItemType == 1 || current_item_->ItemType == 2)
         {
-            auto team_menu = new TeamMenu();
-            team_menu->setItem(current_item_);
+            TeamMenu team_menu;
+            team_menu.setItem(current_item_);
             auto format_str = "誰要修煉%s";
-            if (current_item_->ItemType == 1) { format_str = "誰要裝備%s"; }
-            team_menu->setText(convert::formatString(format_str, current_item_->Name));
-            team_menu->run();
-            auto role = team_menu->getRole();
-            delete team_menu;
+            if (current_item_->ItemType == 1)
+            {
+                format_str = "誰要裝備%s";
+            }
+            team_menu.setText(convert::formatString(format_str, current_item_->Name));
+            team_menu.run();
+            auto role = team_menu.getRole();
             if (role)
             {
                 GameUtil::equip(role, current_item_);
@@ -369,7 +486,7 @@ void UIItem::onPressedOK()
             //似乎不需要特殊处理
         }
     }
-    setExit(true);   //用于战斗时。平时物品栏不是以根节点运行，设置这个没有作用
+    setExit(true);    //用于战斗时。平时物品栏不是以根节点运行，设置这个没有作用
 }
 
 void UIItem::onPressedCancel()

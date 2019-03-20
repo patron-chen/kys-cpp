@@ -1,5 +1,4 @@
 #include "Types.h"
-#include "GameUtil.h"
 
 //设置人物坐标，若输入值为负，相当于从人物层清除
 void Role::setPosition(int x, int y)
@@ -30,8 +29,14 @@ int Role::getRoleShowLearnedMagicLevel(int i)
 int Role::getRoleMagicLevelIndex(int i)
 {
     int l = MagicLevel[i] / 100;
-    if (l < 0) { l = 0; }
-    if (l > 9) { l = 9; }
+    if (l < 0)
+    {
+        l = 0;
+    }
+    if (l > 9)
+    {
+        l = 9;
+    }
     return l;
 }
 
@@ -41,7 +46,10 @@ int Role::getLearnedMagicCount()
     int n = 0;
     for (int i = 0; i < ROLE_MAGIC_COUNT; i++)
     {
-        if (MagicID[i] > 0) { n++; }
+        if (MagicID[i] > 0)
+        {
+            n++;
+        }
     }
     return n;
 }
@@ -80,56 +88,75 @@ int Role::getMagicOfRoleIndex(Magic* magic)
 //限制人物的属性
 void Role::limit()
 {
-    GameUtil::limit2(Level, 0, MAX_LEVEL);
+    auto limit2 = [&](int& v, int v1, int v2)
+    {
+        if (v < v1)
+        {
+            v = v1;
+        }
+        if (v > v2)
+        {
+            v = v2;
+        }
+    };
 
-    GameUtil::limit2(Exp, 0, MAX_EXP);
-    GameUtil::limit2(ExpForItem, 0, MAX_EXP);
-    GameUtil::limit2(ExpForMakeItem, 0, MAX_EXP);
+    auto r_max = Role::getMaxValue();
+    limit2(Level, 0, r_max->Level);
 
-    GameUtil::limit2(Poison, 0, MAX_POISON);
+    limit2(Exp, 0, r_max->Exp);
+    limit2(ExpForItem, 0, r_max->Exp);
+    limit2(ExpForMakeItem, 0, r_max->Exp);
 
-    GameUtil::limit2(MaxHP, 0, MAX_HP);
-    GameUtil::limit2(MaxMP, 0, MAX_MP);
-    GameUtil::limit2(HP, 0, MaxHP);
-    GameUtil::limit2(MP, 0, MaxMP);
-    GameUtil::limit2(PhysicalPower, 0, MAX_PHYSICAL_POWER);
+    limit2(Poison, 0, r_max->Poison);
 
-    GameUtil::limit2(Attack, 0, MAX_ATTACK);
-    GameUtil::limit2(Defence, 0, MAX_DEFENCE);
-    GameUtil::limit2(Speed, 0, MAX_SPEED);
+    limit2(MaxHP, 0, r_max->HP);
+    limit2(MaxMP, 0, r_max->MP);
+    limit2(HP, 0, MaxHP);
+    limit2(MP, 0, MaxMP);
+    limit2(PhysicalPower, 0, r_max->PhysicalPower);
 
-    GameUtil::limit2(Medcine, 0, MAX_MEDCINE);
-    GameUtil::limit2(UsePoison, 0, MAX_USE_POISON);
-    GameUtil::limit2(Detoxification, 0, MAX_DETOXIFICATION);
-    GameUtil::limit2(AntiPoison, 0, MAX_ANTI_POISON);
+    limit2(Attack, 0, r_max->Attack);
+    limit2(Defence, 0, r_max->Defence);
+    limit2(Speed, 0, r_max->Speed);
 
-    GameUtil::limit2(Fist, 0, MAX_FIST);
-    GameUtil::limit2(Sword, 0, MAX_SWORD);
-    GameUtil::limit2(Knife, 0, MAX_KNIFE);
-    GameUtil::limit2(Unusual, 0, MAX_UNUSUAL);
-    GameUtil::limit2(HiddenWeapon, 0, MAX_HIDDEN_WEAPON);
+    limit2(Medicine, 0, r_max->Medicine);
+    limit2(UsePoison, 0, r_max->UsePoison);
+    limit2(Detoxification, 0, r_max->Detoxification);
+    limit2(AntiPoison, 0, r_max->AntiPoison);
 
-    GameUtil::limit2(Knowledge, 0, MAX_KNOWLEDGE);
-    GameUtil::limit2(Morality, 0, MAX_MORALITY);
-    GameUtil::limit2(AttackWithPoison, 0, MAX_ATTACK_WITH_POISON);
-    GameUtil::limit2(Fame, 0, MAX_FAME);
-    GameUtil::limit2(IQ, 0, MAX_IQ);
+    limit2(Fist, 0, r_max->Fist);
+    limit2(Sword, 0, r_max->Sword);
+    limit2(Knife, 0, r_max->Knife);
+    limit2(Unusual, 0, r_max->Unusual);
+    limit2(HiddenWeapon, 0, r_max->HiddenWeapon);
+
+    limit2(Knowledge, 0, r_max->Knowledge);
+    limit2(Morality, 0, r_max->Morality);
+    limit2(AttackWithPoison, 0, r_max->AttackWithPoison);
+    limit2(Fame, 0, r_max->Fame);
+    limit2(IQ, 0, r_max->IQ);
 
     for (int i = 0; i < ROLE_MAGIC_COUNT; i++)
     {
-        GameUtil::limit2(MagicLevel[i], 0, MAX_MAGIC_LEVEL);
+        limit2(MagicLevel[i], 0, MAX_MAGIC_LEVEL);
     }
 }
 
 int Role::learnMagic(Magic* magic)
 {
-    if (magic == nullptr || magic->ID <= 0) { return -1; }  //武学id错误
+    if (magic == nullptr || magic->ID <= 0)
+    {
+        return -1;
+    }    //武学id错误
     return learnMagic(magic->ID);
 }
 
 int Role::learnMagic(int magic_id)
 {
-    if (magic_id <= 0) { return -1; }
+    if (magic_id <= 0)
+    {
+        return -1;
+    }
     //检查是否已经学得
     int index = -1;
     for (int i = 0; i < ROLE_MAGIC_COUNT; i++)
@@ -143,10 +170,11 @@ int Role::learnMagic(int magic_id)
             }
             else
             {
-                return -2;   //满级
+                return -2;    //满级
             }
         }
-        if (MagicID[i] <= 0)
+        //记录最靠前的空位
+        if (MagicID[i] <= 0 && index == -1)
         {
             index = i;
         }
@@ -154,7 +182,7 @@ int Role::learnMagic(int magic_id)
 
     if (index < 0)
     {
-        return -3;   //若进行到此index为负，表示武学栏已满
+        return -3;    //若进行到此index为负，表示武学栏已满
     }
     else
     {
@@ -165,11 +193,19 @@ int Role::learnMagic(int magic_id)
     }
 }
 
+Role Role::max_role_value_;
+
 //设置某个事件的坐标，在一些MOD里面此语句有错误
 void SubMapEvent::setPosition(int x, int y, SubMapInfo* submap_record)
 {
-    if (x < 0) { x = X_; }
-    if (y < 0) { y = Y_; }
+    if (x < 0)
+    {
+        x = X_;
+    }
+    if (y < 0)
+    {
+        y = Y_;
+    }
     auto index = submap_record->EventIndex(X_, Y_);
     submap_record->EventIndex(X_, Y_) = -1;
     X_ = x;
@@ -179,7 +215,30 @@ void SubMapEvent::setPosition(int x, int y, SubMapInfo* submap_record)
 
 int Magic::calMaxLevelIndexByMP(int mp, int max_level)
 {
-    max_level = GameUtil::limit(max_level, 0, MAX_MAGIC_LEVEL_INDEX);
-    int level = GameUtil::limit(mp / (NeedMP * 2) * 2 - 1, 0, max_level);
+    auto limit = [&](int v, int v1, int v2) {
+        if (v < v1)
+        {
+            v = v1;
+        }
+        if (v > v2)
+        {
+            v = v2;
+        }
+        return v;
+    };
+    max_level = limit(max_level, 0, MAX_MAGIC_LEVEL_INDEX);
+    if (NeedMP <= 0)
+    {
+        return max_level;
+    }
+    int level = limit(mp / (NeedMP * 2) * 2 - 1, 0, max_level);
     return level;
+}
+
+int Item::MoneyItemID = 174;
+int Item::CompassItemID = 182;
+
+bool Item::isCompass()
+{
+    return ID == CompassItemID;
 }

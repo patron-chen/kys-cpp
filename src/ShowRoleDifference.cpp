@@ -1,14 +1,12 @@
 #include "ShowRoleDifference.h"
 #include "Font.h"
-#include "others/libconvert.h"
 #include "Save.h"
+#include "convert.h"
 
 ShowRoleDifference::ShowRoleDifference()
 {
-    head1_ = new Head();
-    addChild(head1_);
-    head2_ = new Head();
-    addChild(head2_, 400, 0);
+    addChild(&head1_);
+    addChild(&head2_, 400, 0);
     //setText("修習成功");
     setPosition(250, 180);
     setTextPosition(0, -30);
@@ -22,23 +20,23 @@ void ShowRoleDifference::draw()
 {
     if (role1_ == nullptr || role2_ == nullptr) { return; }
 
-    if (black_screen_)
-    {
-        Engine::getInstance()->fillColor({ 0, 0, 0, 192 }, 0, 0, -1, -1);
-    }
-    head1_->setRole(role1_);
-    head2_->setRole(role2_);
-    head1_->setState(Press);
-    head2_->setState(Press);
+    //if (black_screen_)
+    //{
+    Engine::getInstance()->fillColor({ 0, 0, 0, 128 }, 0, 0, -1, -1);
+    //}
+    head1_.setRole(role1_);
+    head2_.setRole(role2_);
+    head1_.setState(Press);
+    head2_.setState(Press);
     if (role1_ && role2_ && role1_->ID == role2_->ID)
     {
-        head1_->setRole(role2_);
-        head1_->setPosition(200, 50);
-        head2_->setRole(nullptr);
+        head1_.setRole(role2_);
+        head1_.setPosition(200, 50);
+        head2_.setRole(nullptr);
     }
 
-    head1_->setVisible(show_head_);
-    head2_->setVisible(show_head_);
+    head1_.setVisible(show_head_);
+    head2_.setVisible(show_head_);
 
     auto font = Font::getInstance();
     BP_Color color = { 255, 255, 255, 255 };
@@ -68,7 +66,7 @@ void ShowRoleDifference::draw()
     showOneDifference(role1_->Defence, "防禦 %7d   -> %7d", 20, color, x, y);
     showOneDifference(role1_->Speed, "輕功 %7d   -> %7d", 20, color, x, y);
 
-    showOneDifference(role1_->Medcine, "醫療 %7d   -> %7d", 20, color, x, y);
+    showOneDifference(role1_->Medicine, "醫療 %7d   -> %7d", 20, color, x, y);
     showOneDifference(role1_->UsePoison, "用毒 %7d   -> %7d", 20, color, x, y);
     showOneDifference(role1_->Detoxification, "解毒 %7d   -> %7d", 20, color, x, y);
     showOneDifference(role1_->AntiPoison, "抗毒 %7d   -> %7d", 20, color, x, y);
@@ -94,7 +92,8 @@ void ShowRoleDifference::draw()
 
     for (int i = 0; i < ROLE_MAGIC_COUNT; i++)
     {
-        if (role2_->MagicID[i] > 0 && role1_->getRoleShowLearnedMagicLevel(i) != role2_->getRoleShowLearnedMagicLevel(i))
+        if (role2_->MagicID[i] > 0
+            && (role1_->MagicID[i] <= 0 || role1_->getRoleShowLearnedMagicLevel(i) != role2_->getRoleShowLearnedMagicLevel(i)))
         {
             str = convert::formatString("武學%s目前修為%d",
                 Save::getInstance()->getMagic(role2_->MagicID[i])->Name, role2_->getRoleShowLearnedMagicLevel(i));
@@ -109,4 +108,3 @@ void ShowRoleDifference::draw()
     //showOneDifference(role1_->Level, "御劍 %7d   -> %7d", 20, color, x, y);
     TextBox::draw();
 }
-

@@ -1,6 +1,6 @@
 #pragma once
-#include "Menu.h"
 #include "Head.h"
+#include "Menu.h"
 #include "UIItem.h"
 
 class BattleScene;
@@ -12,20 +12,24 @@ public:
     BattleActionMenu();
     virtual ~BattleActionMenu();
 
-    virtual void onEntrance() override;
+    //virtual void onEntrance() override;
 
     Role* role_ = nullptr;
-    void setRole(Role* r) { role_ = r; }
-    int runAsRole(Role* r) { setRole(r); return run(); }
+    void setRole(Role* r);
+    int runAsRole(Role* r)
+    {
+        setRole(r);
+        return run();
+    }
+
+    void dealEvent(BP_Event& e) override;
 
     BattleScene* battle_scene_ = nullptr;
     void setBattleScene(BattleScene* b) { battle_scene_ = b; }
 
-    void dealEvent(BP_Event& e) override;
-
     int autoSelect(Role* role);
 
-    MapSquareInt* distance_layer_;
+    MapSquareInt distance_layer_;
 
     void calDistanceLayer(int x, int y, int max_step = 64);
 
@@ -55,7 +59,6 @@ public:
     Role* getNearestRole(Role* role, std::vector<Role*> roles);
     void calAIActionNearest(Role* r2, AIAction& aa, Role* r_temp = nullptr);
     int calNeedActionDistance(AIAction& aa);
-
 };
 
 class BattleMagicMenu : public MenuText
@@ -64,41 +67,45 @@ public:
     BattleMagicMenu() {}
     virtual ~BattleMagicMenu() {}
 
-    virtual void onEntrance() override;
-
-    void dealEvent(BP_Event& e) override;
+    //virtual void onEntrance() override;
 
     Role* role_ = nullptr;
     Magic* magic_ = nullptr;
-    void setRole(Role* r) { role_ = r; }
-    int runAsRole(Role* r) { setRole(r); return run(); }
+    void setRole(Role* r);
+    int runAsRole(Role* r)
+    {
+        setRole(r);
+        return run();
+    }
 
     Magic* getMagic() { return magic_; }
+    void onEntrance() override;
 
     virtual void onPressedOK() override;
-    virtual void onPressedCancel() override { magic_ = nullptr; exitWithResult(-1); }
-
+    virtual void onPressedCancel() override
+    {
+        magic_ = nullptr;
+        exitWithResult(-1);
+    }
 };
-
 
 class BattleItemMenu : public UIItem
 {
 public:
     BattleItemMenu();
     virtual ~BattleItemMenu() {}
+
 private:
     Role* role_ = nullptr;
-public:
-    virtual void dealEvent(BP_Event& e) override;
 
+public:
     void setRole(Role* r) { role_ = r; }
     Role* getRole() { return role_; }
 
     void addItem(Item* item, int count);
 
+    void onEntrance() override;
+
     std::vector<Item*> getAvaliableItems();
     static std::vector<Item*> getAvaliableItems(Role* role, int type);
-
 };
-
-
